@@ -202,25 +202,28 @@ class XMLChunker(object):
         """
         Read and chunk all 
         """
+        print "read..."
         coord_node_match = None
         xml_nodes = self._new_xml_outstream()
         coords = []
-        coord_node_re_match = re.compile(r'^\s*<node id="(\d+)" .*lat="([-0-9.]+)" '
-                                          'lon="([-0-9.]+)".*/>').match
+        coord_node_re_match = re.compile(r'^\s*<node\s*id="([0-9]+)"\s*lat="([-0-9.]+)"\s*lon="([-0-9.]+)".*timestamp="([^"]+)"\s*version="([0-9]+)"').match
         node_re_match = re.compile(r'^\s*<node .*/>').match
         xml_nodes.write(self._last_line)
         split = False
         line = ''
         for line in self.stream:
             if coords_callback:
+                #print "coords callback"
                 coord_node_match = coord_node_re_match(line)
                 if coord_node_match:
-                    osm_id, lat, lon = coord_node_match.groups()
-                    coords.append((int(osm_id), float(lon), float(lat)))
+                    print "match"
+                    osm_id, lat, lon, timestamp, version = coord_node_match.groups()
+                    coords.append((int(osm_id), float(lon), float(lat), timestamp, int(version)))
                     if len(coords) >= 512:
                         coords_callback(coords)
                         coords = []
                 else:
+                    print "xml nodes"
                     xml_nodes.write(line)
             else:
                 xml_nodes.write(line)

@@ -7,7 +7,7 @@ It has a simple API and it is fast and easy to use. It also works across multipl
 
 It is developed and supported by [Omniscale](http://omniscale.com) and released under the [Apache Software License 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-This version is modified to expose more attributes for analysis purposes by Martijn van Exel
+This version is modified to expose more attributes for analysis purposes by Martijn van Exel. PBF support only for now. 
 
 Example
 -------
