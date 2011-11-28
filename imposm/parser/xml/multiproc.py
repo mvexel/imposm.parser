@@ -15,6 +15,8 @@
 import mmap
 import multiprocessing
 import re
+import time
+import iso8601
 
 from Queue import Empty
 
@@ -202,35 +204,45 @@ class XMLChunker(object):
         """
         Read and chunk all 
         """
-        print "read..."
         coord_node_match = None
         xml_nodes = self._new_xml_outstream()
         coords = []
-        coord_node_re_match = re.compile(r'^\s*<node\s*id="([0-9]+)"\s*lat="([-0-9.]+)"\s*lon="([-0-9.]+)".*timestamp="([^"]+)"\s*version="([0-9]+)"').match
-        node_re_match = re.compile(r'^\s*<node .*/>').match
+        coord_node_re_match = re.compile(r'^\s*<node id="(\d+)" .*lat="([-0-9.]+)" '
+                                          'lon="([-0-9.]+)".*/>').match
+        #coord_node_re_match = re.compile(r'^\s*<node(.+)>').match
+#        coord_id_re_match = re.compile(r'^.*\sid="([^"]+)"').match
+#        coord_lon_re_match = re.compile(r'^.*\slon="([^"]+)"').match
+#        coord_lat_re_match = re.compile(r'^.*\slat="([^"]+)"').match
+        coord_version_re_match = re.compile(r'^.*\sversion="([^"]+)"').match
+        coord_timestamp_re_match = re.compile(r'^.*\stimestamp="([^"]+)"').match
         xml_nodes.write(self._last_line)
         split = False
         line = ''
         for line in self.stream:
             if coords_callback:
-                #print "coords callback"
                 coord_node_match = coord_node_re_match(line)
                 if coord_node_match:
-                    print "match"
-                    osm_id, lat, lon, timestamp, version = coord_node_match.groups()
-                    coords.append((int(osm_id), float(lon), float(lat), timestamp, int(version)))
+                    osm_id, lat, lon = coord_node_match.groups()
+#                    lon = coord_lon_re_match(line).group(1)
+#                    lat = coord_lat_re_match(line).group(1)
+                    version = coord_version_re_match(line).group(1)
+                    timestamp = coord_timestamp_re_match(line).group(1)
+                    #osm_id, lat, lon, version, timestamp = coord_node_match.groups()
+                    coords.append((int(osm_id), float(lon), float(lat), int(version), time.mktime(iso8601.parse_date(timestamp).timetuple())))
+                    #print coords
                     if len(coords) >= 512:
                         coords_callback(coords)
                         coords = []
                 else:
-                    print "xml nodes"
+                    #print 'no coord match'
                     xml_nodes.write(line)
             else:
+                #print 'tsja'
                 xml_nodes.write(line)
             if split:
                 if (line.lstrip().startswith('</')
                     or (coords_callback and coord_node_match)
-                    or (not coords_callback and node_re_match(line))):
+                    or (not coords_callback and coord_node_re_match(line))):
                     mmaps_queue.put(self._finished_xml_outstream(line, xml_nodes))
                     xml_nodes = self._new_xml_outstream()
                     split = False
