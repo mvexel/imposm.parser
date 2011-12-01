@@ -125,9 +125,9 @@ class PBFParser(object):
                 if not relation[1]:
                     continue
             if self.marshal:
-                relations.append((relation[0], dumps((relation[1], relation[2]), 2), relation[3], relation[4], way[5]))
+                relations.append((relation[0], dumps((relation[1], relation[2]), 2), relation[3], relation[4], relation[5]))
             else:
-                relations.append((relation[0], relation[1], relation[2], relation[3], relation[4], way[5]))
+                relations.append((relation[0], relation[1], relation[2], relation[3], relation[4], relation[5]))
             if len(relations) >= 256:
                 self.relations_callback(relations)
                 relations = []
