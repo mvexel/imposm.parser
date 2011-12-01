@@ -86,14 +86,14 @@ class PBFParser(object):
                     self.nodes_tag_filter(node[1])
                 if node[1]:
                     if self.marshal:
-                        nodes.append((node[0], dumps((node[1], node[2]), 2), node[3], node[4]))
+                        nodes.append((node[0], dumps((node[1], node[2]), 2), node[3], node[4], node[5]))
                     else:
-                        nodes.append((node[0], node[1], node[2], node[3], node[4]))
+                        nodes.append((node[0], node[1], node[2], node[3], node[4], node[5]))
                 if len(nodes) >= 256:
                     nodes_callback(nodes)
                     nodes = []
             if coords_callback:
-                coords.append((node[0], node[2][0], node[2][1], node[3], node[4]))
+                coords.append((node[0], node[2][0], node[2][1], node[3], node[4], node[5]))
                 if len(coords) >= 512:
                     coords_callback(coords)
                     coords = []
@@ -109,9 +109,9 @@ class PBFParser(object):
                 self.ways_tag_filter(way[1])
             # always return ways, might be needed for relations
             if self.marshal:
-                ways.append((way[0], dumps((way[1], way[2]), 2), way[3],  way[4]))
+                ways.append((way[0], dumps((way[1], way[2]), 2), way[3],  way[4], way[5]))
             else:
-                ways.append((way[0], way[1], way[2], way[3], way[4]))
+                ways.append((way[0], way[1], way[2], way[3], way[4], way[5]))
             if len(ways) >= 256:
                 self.ways_callback(ways)
                 ways = []
@@ -125,9 +125,9 @@ class PBFParser(object):
                 if not relation[1]:
                     continue
             if self.marshal:
-                relations.append((relation[0], dumps((relation[1], relation[2]), 2), relation[3], relation[4]))
+                relations.append((relation[0], dumps((relation[1], relation[2]), 2), relation[3], relation[4], way[5]))
             else:
-                relations.append((relation[0], relation[1], relation[2], relation[3], relation[4]))
+                relations.append((relation[0], relation[1], relation[2], relation[3], relation[4], way[5]))
             if len(relations) >= 256:
                 self.relations_callback(relations)
                 relations = []
@@ -187,7 +187,7 @@ class PrimitiveBlockParser(object):
         """
         Return an iterator for all *nodes* in this primitive block.
         
-        :rtype: iterator of ``(osm_id, tags, (lon, lat), osm_version)`` tuples
+        :rtype: iterator of ``(osm_id, tags, (lon, lat), osm_version, osm_timestamp, osm_uid)`` tuples
         """
         for group in self.primitivegroup:
             dense = group.dense
@@ -199,19 +199,21 @@ class PrimitiveBlockParser(object):
                 get_tags = self._get_tags
                 versions = dense.denseinfo.version
                 timestamps = dense.denseinfo.timestamp
+                uids = dense.denseinfo.uid
                 ids = dense.id
                 lats = dense.lat
                 lons = dense.lon
                 keys_vals = dense.keys_vals
-                last_id = last_version = last_timestamp = last_lat = last_lon = last_keysvals_pos = 0
+                last_id = last_lat = last_lon = last_keysvals_pos = last_version = last_timestamp = last_uid = 0
                 for i in xrange(len(ids)):
                     last_id += ids[i]
-                    last_version = versions[i]
-                    last_timestamp += timestamps[i]
                     last_lat += coord_scale * (lat_offset + (granularity * lats[i]))
                     last_lon += coord_scale * (lon_offset + (granularity * lons[i]))
                     tags, last_keysvals_pos = get_tags(keys_vals, last_keysvals_pos)
-                    yield (last_id, tags, (last_lon, last_lat), last_version, last_timestamp)
+                    last_version = versions[i]
+                    last_timestamp += timestamps[i]
+                    last_uid += uids[i]
+                    yield (last_id, tags, (last_lon, last_lat), last_version, last_timestamp, last_uid)
             nodes = group.nodes
             if nodes:
                 for node in nodes:
@@ -219,13 +221,13 @@ class PrimitiveBlockParser(object):
                     tags = []
                     for i in xrange(len(keys)):
                         tags.append((self.stringtable[keys[i]], self.stringtable[vals[i]]))
-                    yield (node.id, tags, (node.lon, node.lat), node.info.version, node.info.timestamp)
+                    yield (node.id, tags, (node.lon, node.lat), node.info.version, node.info.timestamp, node.info.uid)
     
     def ways(self):
         """
         Return an iterator for all *ways* in this primitive block.
         
-        :rtype: iterator of ``(osm_id, tags, [ref1, ref2, ...], osm_version)`` tuples
+        :rtype: iterator of ``(osm_id, tags, [ref1, ref2, ...], osm_version, osm_timestamp, osm_uid)`` tuples
         """
         for group in self.primitivegroup:
             ways = group.ways
@@ -243,13 +245,13 @@ class PrimitiveBlockParser(object):
                     for delta in delta_refs:
                         ref += delta
                         refs.append(ref)
-                    yield (way.id, tags, refs, way.info.version, way.info.timestamp)
+                    yield (way.id, tags, refs, way.info.version, way.info.timestamp, way.info.uid)
     
     def relations(self):
         """
         Return an iterator for all *relations* in this primitive block.
         
-        :rtype: iterator of ``(osm_id, tags, [(ref1, type, role), ...], osm_version)`` tuples
+        :rtype: iterator of ``(osm_id, tags, [(ref1, type, role), ...], osm_version, osm_timestamp, osm_uid)`` tuples
         
         """
         for group in self.primitivegroup:
@@ -269,7 +271,7 @@ class PrimitiveBlockParser(object):
                     tags = {}
                     for i in xrange(len(keys)):
                         tags[self.stringtable[keys[i]]] = self.stringtable[vals[i]]
-                    yield (relation.id, tags, members, relation.info.version, relation.info.timestamp)
+                    yield (relation.id, tags, members, relation.info.version, relation.info.timestamp, relation.info.uid)
                     
 class PBFHeader(object):
     def __init__(self, filename, blob_pos, blob_size):

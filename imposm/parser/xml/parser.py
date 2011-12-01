@@ -54,17 +54,17 @@ class XMLParser(object):
                     x, y = float(elem.attrib['lon']), float(elem.attrib['lat'])
                     version = int(elem.attrib['version'])
                     timestamp = iso8601.parse_date(elem.attrib['timestamp'])
-#                    print str(timestamp.utcoffset()) + ' - ' + str(time.mktime(iso8601.parse_date(elem.attrib['timestamp']).timetuple()))
+                    osm_uid = int(elem.attrib['uid'])
                     timestamp = time.mktime(iso8601.parse_date(elem.attrib['timestamp']).timetuple()) #holy guacamole...
                     if self.coords_callback:
-                        coords.append((osmid, x, y, version, timestamp))
+                        coords.append((osmid, x, y, version, timestamp, osm_uid))
                     if self.nodes_tag_filter:
                         self.nodes_tag_filter(tags)
                     if tags and self.nodes_callback:
                         if self.marshal_elem_data:
-                            nodes.append((osmid, dumps((tags, (x, y)), 2), version, timestamp))
+                            nodes.append((osmid, dumps((tags, (x, y)), 2), version, timestamp, osm_uid))
                         else:
-                            nodes.append((osmid, tags, (x, y), version, timestamp))
+                            nodes.append((osmid, tags, (x, y), version, timestamp, osm_uid))
                     tags = {}
                 elif elem.tag == 'nd':
                     refs.append(int(elem.attrib['ref']))
@@ -74,26 +74,28 @@ class XMLParser(object):
                     osm_id = int(elem.attrib['id'])
                     version = int(elem.attrib['version'])
                     timestamp = time.mktime(iso8601.parse_date(elem.attrib['timestamp']).timetuple()) #holy guacamole...
+                    osm_uid = int(elem.attrib['uid'])
                     if self.ways_tag_filter:
                         self.ways_tag_filter(tags)
                     if self.ways_callback:
                         if self.marshal_elem_data:
-                            ways.append((osm_id, dumps((tags, refs), 2), version, timestamp))
+                            ways.append((osm_id, dumps((tags, refs), 2), version, timestamp, osm_uid))
                         else:
-                            ways.append((osm_id, tags, refs, version, timestamp))
+                            ways.append((osm_id, tags, refs, version, timestamp, osm_uid))
                     refs = []
                     tags = {}
                 elif elem.tag == 'relation':
                     osm_id = int(elem.attrib['id'])
                     version = int(elem.attrib['version'])
                     timestamp = time.mktime(iso8601.parse_date(elem.attrib['timestamp']).timetuple()) #holy guacamole...
+                    osm_uid = int(elem.attrib['uid'])
                     if self.relations_tag_filter:
                         self.relations_tag_filter(tags)
                     if tags and self.relations_callback:
                         if self.marshal_elem_data:
-                            relations.append((osm_id, dumps((tags, members), 2), version, timestamp))
+                            relations.append((osm_id, dumps((tags, members), 2), version, timestamp, osm_uid))
                         else:
-                            relations.append((osm_id, tags, members, version, timestamp))
+                            relations.append((osm_id, tags, members, version, timestamp, osm_uid))
                     members = []
                     tags = {}
             

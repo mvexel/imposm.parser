@@ -209,12 +209,9 @@ class XMLChunker(object):
         coords = []
         coord_node_re_match = re.compile(r'^\s*<node id="(\d+)" .*lat="([-0-9.]+)" '
                                           'lon="([-0-9.]+)".*/>').match
-        #coord_node_re_match = re.compile(r'^\s*<node(.+)>').match
-#        coord_id_re_match = re.compile(r'^.*\sid="([^"]+)"').match
-#        coord_lon_re_match = re.compile(r'^.*\slon="([^"]+)"').match
-#        coord_lat_re_match = re.compile(r'^.*\slat="([^"]+)"').match
         coord_version_re_match = re.compile(r'^.*\sversion="([^"]+)"').match
         coord_timestamp_re_match = re.compile(r'^.*\stimestamp="([^"]+)"').match
+        coord_uid_re_match = re.compile(r'^.*\suid="([^"]+)"').match
         xml_nodes.write(self._last_line)
         split = False
         line = ''
@@ -223,12 +220,10 @@ class XMLChunker(object):
                 coord_node_match = coord_node_re_match(line)
                 if coord_node_match:
                     osm_id, lat, lon = coord_node_match.groups()
-#                    lon = coord_lon_re_match(line).group(1)
-#                    lat = coord_lat_re_match(line).group(1)
                     version = coord_version_re_match(line).group(1)
                     timestamp = coord_timestamp_re_match(line).group(1)
-                    #osm_id, lat, lon, version, timestamp = coord_node_match.groups()
-                    coords.append((int(osm_id), float(lon), float(lat), int(version), time.mktime(iso8601.parse_date(timestamp).timetuple())))
+                    osm_uid = coord_uid_re_match(line).group(1)
+                    coords.append((int(osm_id), float(lon), float(lat), int(version), time.mktime(iso8601.parse_date(timestamp).timetuple()), osm_uid))
                     #print coords
                     if len(coords) >= 512:
                         coords_callback(coords)
